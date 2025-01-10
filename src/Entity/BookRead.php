@@ -17,8 +17,9 @@ class BookRead
     #[ORM\Column]
     private ?int $user_id = null;
 
-    #[ORM\Column(type: Types::BIGINT)]
-    private ?string $book_id = null;
+    #[ORM\ManyToOne(targetEntity: Book::class)]
+    #[ORM\JoinColumn(name: 'book_id', referencedColumnName: 'id', nullable: false)]
+    private ?Book $book = null; // Nouvelle relation ManyToOne avec Book
 
     #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, nullable: true)]
     private ?string $rating = null;
@@ -38,6 +39,8 @@ class BookRead
     #[ORM\Column]
     private ?\DateTime $updated_at = null;
 
+    // Ajout des getters et setters
+
     public function getId(): ?int
     {
         return $this->id;
@@ -55,14 +58,15 @@ class BookRead
         return $this;
     }
 
-    public function getBookId(): ?string
+    // Getter et setter pour la relation avec Book
+    public function getBook(): ?Book
     {
-        return $this->book_id;
+        return $this->book;
     }
 
-    public function setBookId(string $book_id): static
+    public function setBook(Book $book): static
     {
-        $this->book_id = $book_id;
+        $this->book = $book;
 
         return $this;
     }
@@ -137,5 +141,11 @@ class BookRead
         $this->updated_at = $updated_at;
 
         return $this;
+    }
+
+    // Ajouter un getter pour le nom du livre, qui fait appel à l'entité Book
+    public function getBookName(): ?string
+    {
+        return $this->book ? $this->book->getName() : null; // Si book existe, retourne son nom
     }
 }

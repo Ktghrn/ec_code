@@ -2,51 +2,51 @@
 
 namespace App\Controller;
 
+use App\Entity\Book;
+use App\Form\BookType;
 use App\Repository\BookReadRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Annotation\Route;
 
 class HomeController extends AbstractController
 {
-    private BookReadRepository $readBookRepository;
+    private BookReadRepository $bookReadRepository;
 
-    // Inject the repository via the constructor
     public function __construct(BookReadRepository $bookReadRepository)
     {
         $this->bookReadRepository = $bookReadRepository;
     }
 
     #[Route('/', name: 'app.home')]
-    public function index(): Response
+    public function index(Request $request, EntityManagerInterface $entityManager): Response
     {
-        $userId     = 1;
-        $booksRead  = $this->bookReadRepository->findByUserId($userId, false);
+        $userId = 1;
 
-        // Render the 'hello.html.twig' template
+        // Récupérer les livres lus par l'utilisateur
+        $booksRead = $this->bookReadRepository->findByUserId($userId, false);
+
+        // Créer le formulaire
+        $book = new Book();
+        $form = $this->createForm(BookType::class, $book);
+        $form->handleRequest($request);
+
+        // Traiter le formulaire
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->persist($book);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'Livre ajouté avec succès.');
+            return $this->redirectToRoute('app.home');
+        }
+
+        // Rendre la vue avec les livres lus et le formulaire
         return $this->render('pages/home.html.twig', [
             'booksRead' => $booksRead,
-            'name'      => 'Accueil', // Pass data to the view
-        ]);
-    }
-
-
-    #[Route('/login', name: 'auth.login')]
-    public function login(): Response
-    {
-        // Render the 'hello.html.twig' template
-        return $this->render('auth/login.html.twig', [
-            'name' => 'Thibaud', // Pass data to the view
-        ]);
-    }
-
-    #[Route('/register', name: 'auth.register')]
-    public function register(): Response
-    {
-        // Render the 'hello.html.twig' template
-        return $this->render('auth/register.html.twig', [
-            'name' => 'Thibaud', // Pass data to the view
+            'name' => 'Accueil',
+            'addBookform' => $form->createView(),
         ]);
     }
 }
